@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PI Capacity Calculator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f7f7f5;
+    --bg-tertiary: #f0ede8;
+    --text-primary: #1a1a18;
+    --text-secondary: #5f5e5a;
+    --text-hint: #888780;
+    --border-light: rgba(0,0,0,0.10);
+    --border-medium: rgba(0,0,0,0.18);
+    --purple-bg: #EEEDFE;
+    --purple-text: #3C3489;
+    --purple-mid: #534AB7;
+    --teal-bg: #E1F5EE;
+    --teal-text: #085041;
+    --teal-mid: #1D9E75;
+    --coral-bg: #FAECE7;
+    --coral-text: #4A1B0C;
+    --coral-mid: #D85A30;
+    --amber-bg: #FAEEDA;
+    --amber-text: #412402;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #1e1e1c;
+      --bg-secondary: #272725;
+      --bg-tertiary: #2e2e2b;
+      --text-primary: #f0ede8;
+      --text-secondary: #a8a59e;
+      --text-hint: #6b6a65;
+      --border-light: rgba(255,255,255,0.10);
+      --border-medium: rgba(255,255,255,0.18);
+      --purple-bg: #26215C;
+      --purple-text: #CECBF6;
+      --purple-mid: #7F77DD;
+      --teal-bg: #04342C;
+      --teal-text: #9FE1CB;
+      --teal-mid: #1D9E75;
+      --coral-bg: #4A1B0C;
+      --coral-text: #F5C4B3;
+      --coral-mid: #D85A30;
+      --amber-bg: #412402;
+      --amber-text: #FAC775;
+    }
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  .app-shell { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
+  .app-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+  .app-header h1 { font-size: 22px; font-weight: 600; }
+  .app-subtitle { font-size: 13px; color: var(--text-secondary); }
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border-light); margin-bottom: 20px; flex-wrap: wrap; }
+  .tab { padding: 9px 18px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text-secondary); background: none; border: none; border-bottom: 2px solid transparent; position: relative; bottom: -1px; transition: color .15s, border-color .15s; }
+  .tab:hover { color: var(--text-primary); }
+  .tab.active { color: var(--purple-mid); border-bottom-color: var(--purple-mid); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .card { background: var(--bg-primary); border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 14px; }
+  .card h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .card-subtitle { font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; }
+  label { font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px; }
+  input[type=text], input[type=number], input[type=date], select {
+    width: 100%; font-size: 13px; padding: 7px 10px; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary); outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  input:focus, select:focus { border-color: var(--purple-mid); box-shadow: 0 0 0 3px rgba(83,74,183,0.12); }
+  input[type=range] { width: 100%; accent-color: var(--purple-mid); cursor: pointer; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  @media (max-width: 600px) { .grid2, .grid3, .grid4 { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 400px) { .grid2, .grid3, .grid4 { grid-template-columns: 1fr; } }
+
+  /* Member cards */
+  .member-card { border: 1px solid var(--border-light); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 10px; background: var(--bg-secondary); }
+  .member-header { display: flex; align-items: center; gap: 10px; padding: 12px 14px; cursor: pointer; user-select: none; }
+  .member-header:hover { background: var(--bg-tertiary); }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+  .av-dev { background: var(--purple-bg); color: var(--purple-text); }
+  .av-dit { background: var(--teal-bg); color: var(--teal-text); }
+  .member-name-edit { flex: 1; font-size: 14px; font-weight: 600; border: none; background: transparent; color: var(--text-primary); outline: none; border-bottom: 1px dashed transparent; transition: border-color .15s; }
+  .member-name-edit:focus { border-bottom-color: var(--purple-mid); }
+  .badge { font-size: 11px; padding: 2px 9px; border-radius: 12px; font-weight: 600; flex-shrink: 0; }
+  .badge-dev { background: var(--purple-bg); color: var(--purple-text); }
+  .badge-dit { background: var(--teal-bg); color: var(--teal-text); }
+  .badge-ip { background: var(--amber-bg); color: var(--amber-text); }
+  .exp-tag { font-size: 11px; color: var(--text-hint); }
+  .chevron { font-size: 10px; color: var(--text-hint); transition: transform .2s; }
+  .member-body { padding: 0 14px 14px; border-top: 1px solid var(--border-light); display: none; }
+  .member-body.open { display: block; }
+  .slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .slider-row label { width: 110px; margin: 0; font-size: 12px; flex-shrink: 0; }
+  .slider-row input[type=range] { flex: 1; }
+  .slider-val { font-size: 13px; font-weight: 600; min-width: 38px; text-align: right; color: var(--text-primary); }
+  .hint { font-size: 11px; color: var(--text-hint); margin-bottom: 10px; margin-left: 120px; }
+
+  /* Iteration cards */
+  .iter-card { background: var(--bg-primary); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 10px; }
+  .iter-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .iter-days-chip { font-size: 11px; color: var(--text-secondary); background: var(--bg-secondary); padding: 2px 10px; border-radius: 12px; margin-left: auto; }
+
+  /* Holidays */
+  .holiday-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .holiday-row input[type=date] { width: 150px; flex-shrink: 0; }
+  .del-btn { background: none; border: none; cursor: pointer; color: var(--text-hint); font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 4px; transition: color .15s, background .15s; }
+  .del-btn:hover { color: var(--coral-mid); background: var(--coral-bg); }
+  .add-btn { width: 100%; padding: 8px 12px; border: 1px dashed var(--border-medium); border-radius: var(--radius-md); background: none; cursor: pointer; color: var(--text-secondary); font-size: 13px; margin-top: 6px; transition: background .15s; }
+  .add-btn:hover { background: var(--bg-secondary); }
+
+  /* PTO table */
+  .pto-table-wrap { overflow-x: auto; }
+  .pto-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 600px; }
+  .pto-table th { text-align: left; padding: 8px 10px; background: var(--bg-secondary); font-weight: 600; font-size: 11px; color: var(--text-secondary); border-bottom: 1px solid var(--border-light); }
+  .pto-table td { padding: 6px 10px; border-bottom: 1px solid var(--border-light); }
+  .pto-table tr:last-child td { border-bottom: none; }
+  .pto-table input[type=number] { width: 54px; font-size: 12px; padding: 4px 6px; }
+
+  /* Summary */
+  .metric-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
+  @media(max-width:600px) { .metric-grid { grid-template-columns: 1fr 1fr; } }
+  .metric-card { background: var(--bg-secondary); border-radius: var(--radius-md); padding: 14px 12px; text-align: center; }
+  .metric-val { font-size: 24px; font-weight: 700; color: var(--text-primary); }
+  .metric-lbl { font-size: 11px; color: var(--text-secondary); margin-top: 3px; }
+  .summary-table-wrap { overflow-x: auto; margin-bottom: 16px; }
+  .sum-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 540px; }
+  .sum-table th { text-align: left; padding: 9px 12px; background: var(--bg-secondary); font-weight: 600; font-size: 11px; color: var(--text-secondary); border-bottom: 1px solid var(--border-light); white-space: nowrap; }
+  .sum-table td { padding: 8px 12px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
+  .sum-table tr:last-child td { border-bottom: none; }
+  .sum-table tbody tr:hover td { background: var(--bg-secondary); }
+  .sp-chip { background: var(--purple-bg); color: var(--purple-text); font-weight: 700; font-size: 13px; padding: 2px 10px; border-radius: 6px; display: inline-block; }
+  .work-bar-wrap { display: flex; height: 10px; border-radius: 5px; overflow: hidden; gap: 1px; min-width: 80px; }
+  .work-bar-seg { height: 100%; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
+  .leg-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary); }
+  .leg-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .pto-tag { color: var(--coral-mid); font-size: 10px; font-weight: 600; }
+  .section-title { font-size: 14px; font-weight: 600; margin: 18px 0 10px; color: var(--text-primary); }
+
+  /* README */
+  .readme { font-size: 13px; line-height: 1.75; color: var(--text-secondary); }
+  .readme h4 { font-size: 14px; font-weight: 600; color: var(--text-primary); margin: 16px 0 6px; }
+  .readme p { margin-bottom: 10px; }
+  .readme ul { margin: 6px 0 12px 20px; }
+  .readme li { margin-bottom: 4px; }
+  .readme code { font-family: 'Courier New', monospace; background: var(--bg-secondary); padding: 1px 5px; border-radius: 4px; font-size: 12px; color: var(--text-primary); }
+  .tip-box { background: var(--purple-bg); border-left: 3px solid var(--purple-mid); padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 10px 0 14px; font-size: 12px; color: var(--purple-text); }
+  .formula-box { background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 12px 16px; font-family: 'Courier New', monospace; font-size: 12px; margin: 8px 0; color: var(--text-primary); }
+
+  /* Buttons */
+  .primary-btn { padding: 11px 24px; background: var(--purple-mid); color: #fff; border: none; border-radius: var(--radius-md); font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; transition: opacity .15s; margin-top: 6px; }
+  .primary-btn:hover { opacity: .88; }
+  .btn-row { display: flex; gap: 10px; margin-top: 10px; }
+  .btn-row .primary-btn { flex: 1; }
+  .pdf-btn { padding: 11px 24px; background: #1a1a18; color: #fff; border: none; border-radius: var(--radius-md); font-size: 14px; font-weight: 600; cursor: pointer; flex: 1; transition: opacity .15s; }
+  .pdf-btn:hover { opacity: .82; }
+  @media(prefers-color-scheme:dark) { .pdf-btn { background: var(--bg-secondary); border: 1px solid var(--border-medium); } }
+  .header-actions { display: flex; gap: 8px; margin-left: auto; align-items: center; }
+  .save-btn { padding: 6px 16px; background: var(--teal-mid); color: #fff; border: none; border-radius: var(--radius-md); font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity .15s; white-space: nowrap; }
+  .save-btn:hover { opacity: .85; }
+  .load-btn { padding: 6px 16px; background: none; color: var(--purple-mid); border: 1px solid var(--purple-mid); border-radius: var(--radius-md); font-size: 12px; font-weight: 600; cursor: pointer; transition: background .15s, color .15s; white-space: nowrap; }
+  .load-btn:hover { background: var(--purple-bg); }
+  .reset-btn { padding: 6px 16px; background: none; color: var(--coral-mid); border: 1px solid var(--coral-mid); border-radius: var(--radius-md); font-size: 12px; font-weight: 600; cursor: pointer; transition: background .15s, color .15s; white-space: nowrap; }
+  .reset-btn:hover { background: var(--coral-bg); }
+  .save-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--teal-mid); color: #fff; padding: 9px 20px; border-radius: var(--radius-md); font-size: 13px; font-weight: 600; pointer-events: none; opacity: 0; transition: opacity .3s; z-index: 9999; }
+  .save-toast.show { opacity: 1; }
+
+  /* Work type allocation on Summary */
+  .wt-section { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 14px; border: 1px solid var(--border-light); }
+  .wt-section-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .wt-types-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .wt-type-card { background: var(--bg-primary); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 12px 14px; position: relative; }
+  .wt-type-name-input { font-size: 13px; font-weight: 600; border: none; background: transparent; color: var(--text-primary); outline: none; border-bottom: 1px dashed var(--border-medium); width: calc(100% - 28px); margin-bottom: 8px; padding-bottom: 3px; display: block; }
+  .wt-type-name-input:focus { border-bottom-color: var(--purple-mid); }
+  .wt-color-strip { width: 100%; height: 4px; border-radius: 2px; margin-bottom: 10px; }
+  .wt-iter-rows { margin-top: 6px; }
+  .wt-iter-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .wt-iter-label { font-size: 11px; color: var(--text-secondary); width: 76px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wt-iter-input { width: 64px !important; font-size: 12px !important; padding: 4px 6px !important; text-align: center; }
+  .wt-iter-sp { font-size: 11px; color: var(--text-hint); min-width: 48px; }
+  .wt-del-btn { position: absolute; top: 8px; right: 10px; background: none; border: none; cursor: pointer; color: var(--text-hint); font-size: 18px; line-height: 1; padding: 2px 5px; border-radius: 4px; transition: color .15s, background .15s; }
+  .wt-del-btn:hover { color: var(--coral-mid); background: var(--coral-bg); }
+  .wt-total-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-light); font-size: 12px; }
+  .wt-total-label { color: var(--text-secondary); }
+  .wt-total-val { font-weight: 700; }
+  .wt-error-banner { background: var(--coral-bg); color: var(--coral-text); font-size: 12px; padding: 8px 12px; border-radius: var(--radius-md); margin-bottom: 10px; border: 1px solid var(--coral-mid); }
+  .wt-add-type-btn { padding: 7px 14px; background: none; border: 1px dashed var(--border-medium); border-radius: var(--radius-md); cursor: pointer; font-size: 12px; color: var(--text-secondary); transition: background .15s; }
+  .wt-add-type-btn:hover { background: var(--bg-primary); }
+  .color-dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .overall-bar-wrap { display: flex; height: 14px; border-radius: 7px; overflow: hidden; gap: 1px; margin: 8px 0 4px; }
+  .overall-bar-seg { height: 100%; transition: width .3s; }
+  .overall-legend { display: flex; flex-wrap: wrap; gap: 10px; }
+  .overall-leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-secondary); }
+  .sum-warn { background: var(--coral-bg); color: var(--coral-text); font-size: 11px; padding: 5px 10px; border-radius: 6px; margin-top: 6px; }
+  .color-swatch { width: 16px; height: 16px; border-radius: 3px; cursor: pointer; flex-shrink: 0; transition: transform .1s, box-shadow .1s; }
+  .color-swatch:hover { transform: scale(1.2); }
+  .color-swatch.selected { box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--text-primary); }
+
+  @media print {
+    .tabs, .primary-btn, .pdf-btn, .btn-row { display: none !important; }
+    .tab-content { display: block !important; }
+    .card, .iter-card, .member-card { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <div class="app-header">
+    <h1>PI Capacity Calculator</h1>
+    <span class="app-subtitle" id="app-subtitle">SAFe Scrum &middot; 8 members &middot; 5 iterations + IP</span>
+    <div class="header-actions">
+      <button class="save-btn" onclick="saveData()">&#8615; Export JSON</button>
+      <button class="load-btn" onclick="document.getElementById('load-file-input').click()">&#8613; Load JSON</button>
+      <input type="file" id="load-file-input" accept=".json" style="display:none" onchange="loadFromFile(this)"/>
+      <button class="reset-btn" onclick="resetData()">&#8635; Reset</button>
+    </div>
+  </div>
+  <div class="save-toast" id="save-toast">Exported!</div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('readme')">README</button>
+    <button class="tab" onclick="switchTab('team')">Team Setup</button>
+    <button class="tab" onclick="switchTab('iterations')">Iterations</button>
+    <button class="tab" onclick="switchTab('holidays')">Holidays &amp; PTO</button>
+    <button class="tab" onclick="switchTab('summary')">Summary</button>
+  </div>
+
+  <!-- README -->
+  <div id="tab-readme" class="tab-content active">
+    <div class="card">
+      <div class="readme">
+        <div class="tip-box">This calculator computes available capacity (story points &amp; hours) for each iteration in your PI, factoring in individual focus, meeting load, PTO, and org holidays. All data stays in your browser — nothing is sent anywhere.</div>
+        <h4>Quick start</h4>
+        <p>Work through the tabs left to right: <strong>Team Setup → Iterations → Holidays &amp; PTO → Summary</strong>. The Summary tab auto-refreshes whenever you switch to it.</p>
+        <h4>Team Setup tab</h4>
+        <p>Eight members are pre-loaded (6 Devs, 2 DITs). Click any member card to expand and configure focus factor, meeting overhead, and experience level.</p>
+        <h4>Iterations tab</h4>
+        <p>Set start/end dates for each iteration. Working days (Mon–Fri, excluding org holidays) are calculated automatically.</p>
+        <h4>Summary tab — Work Type Allocation</h4>
+        <p>The Summary page hosts a fully editable <strong>Work Type Allocation</strong> panel. You can add any custom work type (Feature, RTR, TCoO, etc.), set overall % split, and override individual iteration percentages. A validation check ensures each iteration's work types sum to 100% — an error banner appears if not. Story points per work type are computed automatically from each iteration's total SP.</p>
+        <h4>Holidays &amp; PTO tab</h4>
+        <p>Add organisation-wide holidays (applied to all members) and individual PTO days per iteration.</p>
+        <h4>Export PDF</h4>
+        <p>Click <strong>Save as PDF Report</strong> on the Summary tab to generate and download a formatted PDF report containing PI totals, work type split, per-iteration breakdown, and per-member capacity table.</p>
+        <h4>How story points are calculated</h4>
+        <p><strong>1 story point = 8 hours</strong> (fixed). SP and hours are always directly proportional.</p>
+        <div class="formula-box">
+          Available days = working days − org holidays − PTO days<br>
+          Effective hours = available days × 8h × (1 − meeting overhead%)<br>
+          Story points = effective hours ÷ 8
+        </div>
+        <div class="tip-box">Pro tip: Run at the start of PI Planning with best-guess PTO. Update it as PTO is confirmed during the PI and re-check the Summary to guard against over-commitment.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEAM SETUP -->
+  <div id="tab-team" class="tab-content">
+    <div class="card">
+      <h3>Team members</h3>
+      <p class="card-subtitle">Click a card to expand. Edit the name inline. Add or remove members as needed.</p>
+      <div style="margin-bottom:14px">
+        <label>Team name</label>
+        <input type="text" id="team-name-input" placeholder="e.g. Team Falcon" value="" oninput="teamName=this.value;updateSubtitle()" style="max-width:320px"/>
+      </div>
+      <div id="add-member-bar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;padding:12px 14px;background:var(--bg-secondary);border-radius:var(--radius-md);border:1px solid var(--border-light)">
+        <div style="flex:1;min-width:120px"><label>Name</label><input type="text" id="new-member-name" placeholder="e.g. Dev 7"/></div>
+        <div style="min-width:90px"><label>Role</label><select id="new-member-role"><option>Dev</option><option>DIT</option></select></div>
+        <div style="min-width:100px"><label>Experience</label><select id="new-member-exp"><option>Junior</option><option selected>Mid</option><option>Senior</option></select></div>
+        <button onclick="addMember()" style="padding:7px 18px;background:var(--purple-mid);color:#fff;border:none;border-radius:var(--radius-md);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;height:36px;align-self:flex-end">+ Add member</button>
+      </div>
+      <div id="members-list"></div>
+    </div>
+  </div>
+
+  <!-- ITERATIONS -->
+  <div id="tab-iterations" class="tab-content">
+    <div class="card">
+      <h3>Iteration dates</h3>
+      <p class="card-subtitle">Set start/end dates for each iteration. Working days are auto-calculated. Work type allocation is configured on the Summary tab.</p>
+      <div id="iter-dates-list"></div>
+    </div>
+  </div>
+
+  <!-- HOLIDAYS & PTO -->
+  <div id="tab-holidays" class="tab-content">
+    <div class="card">
+      <h3>Organisation holidays</h3>
+      <p class="card-subtitle">Apply to the entire team. Weekends are already excluded automatically.</p>
+      <div id="org-holidays-list"></div>
+      <button class="add-btn" onclick="addOrgHoliday()">+ Add holiday</button>
+    </div>
+    <div class="card">
+      <h3>Individual PTO</h3>
+      <p class="card-subtitle">Enter number of PTO days per person per iteration.</p>
+      <div class="pto-table-wrap"><div id="pto-table"></div></div>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div id="tab-summary" class="tab-content">
+    <div id="summary-content"></div>
+    <!-- Work type panel lives here permanently so it is never destroyed by calcSummary -->
+    <div id="wt-panel-persistent"></div>
+    <div id="summary-iter-member"></div>
+    <div class="btn-row">
+      <button class="primary-btn" onclick="calcSummary()">&#8635; Recalculate</button>
+      <button class="pdf-btn" onclick="exportPDF()">&#8615; Save as PDF Report</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── Data ─────────────────────────────────────────────────────────────────────
+const ITERS = [
+  {id:'i1', label:'Iteration 1', ip:false},
+  {id:'i2', label:'Iteration 2', ip:false},
+  {id:'i3', label:'Iteration 3', ip:false},
+  {id:'i4', label:'Iteration 4', ip:false},
+  {id:'i5', label:'Iteration 5', ip:false},
+  {id:'ip', label:'IP Iteration', ip:true},
+];
+
+const SP_PER_HOUR = 1 / 8;
+
+let members = [
+  {id:'m1',name:'Dev 1',role:'Dev',exp:'Senior',meetings:20,expanded:false},
+  {id:'m2',name:'Dev 2',role:'Dev',exp:'Mid',   meetings:25,expanded:false},
+  {id:'m3',name:'Dev 3',role:'Dev',exp:'Mid',   meetings:25,expanded:false},
+  {id:'m4',name:'Dev 4',role:'Dev',exp:'Junior',meetings:30,expanded:false},
+  {id:'m5',name:'Dev 5',role:'Dev',exp:'Junior',meetings:30,expanded:false},
+  {id:'m6',name:'Dev 6',role:'Dev',exp:'Senior',meetings:20,expanded:false},
+  {id:'m7',name:'DIT 1',role:'DIT',exp:'Senior',meetings:30,expanded:false},
+  {id:'m8',name:'DIT 2',role:'DIT',exp:'Mid',   meetings:35,expanded:false},
+];
+
+let iterData = {};
+ITERS.forEach((it, i) => {
+  const base  = new Date(2026, 3, 13);
+  const start = new Date(base.getTime() + i * 14 * 24 * 60 * 60 * 1000);
+  const end   = new Date(start.getTime() + 13 * 24 * 60 * 60 * 1000);
+  iterData[it.id] = { start: fmtDate(start), end: fmtDate(end), ipFocus: 50 };
+});
+
+let orgHolidays = [
+  {date:'2026-04-14', name:'Dr Ambedkar Jayanti'},
+  {date:'2026-05-01', name:'Maharashtra Day'},
+];
+
+let pto = {};
+members.forEach(m => { ITERS.forEach(it => { pto[m.id+'_'+it.id] = 0; }); });
+
+// Work type definitions — name, color, global PI %
+const WT_COLORS = ['#534AB7','#1D9E75','#D85A30','#E8A020','#8B5CF6','#EC4899','#0EA5E9','#14B8A6'];
+let workTypes = [
+  { id: 'wt1', name: 'Feature', color: '#534AB7', pct: 60 },
+  { id: 'wt2', name: 'RTR',     color: '#1D9E75', pct: 25 },
+  { id: 'wt3', name: 'TCoO',    color: '#D85A30', pct: 15 },
+];
+let wtIdCounter = 4;
+
+let teamName = '';
+
+// ─── Utilities ────────────────────────────────────────────────────────────────
+function fmtDate(d) { return d.toISOString().split('T')[0]; }
+
+function workingDays(s, e, excludes) {
+  if (!s || !e) return 0;
+  let d = new Date(s), count = 0;
+  const end = new Date(e);
+  if (d > end) return 0;
+  while (d <= end) {
+    const dow = d.getDay();
+    if (dow !== 0 && dow !== 6 && !excludes.includes(fmtDate(d))) count++;
+    d.setDate(d.getDate() + 1);
+  }
+  return count;
+}
+
+function orgHolidaysInRange(s, e) {
+  return orgHolidays.filter(h => h.date >= s && h.date <= e).map(h => h.date);
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelector(`.tab[onclick="switchTab('${t}')"]`).classList.add('active');
+  document.getElementById('tab-'+t).classList.add('active');
+  if (t === 'summary') calcSummary();
+}
+
+// ─── Team Setup ───────────────────────────────────────────────────────────────
+let memberIdCounter = 9;
+
+function updateSubtitle() {
+  const devs = members.filter(m => m.role === 'Dev').length;
+  const dits = members.filter(m => m.role === 'DIT').length;
+  const total = members.length;
+  const parts = [];
+  if (devs) parts.push(`${devs} Dev${devs !== 1 ? 's' : ''}`);
+  if (dits) parts.push(`${dits} DIT${dits !== 1 ? 's' : ''}`);
+  const teamPart = teamName ? `${teamName} \u00B7 ` : '';
+  document.getElementById('app-subtitle').textContent =
+    `${teamPart}SAFe Scrum \u00B7 ${total} member${total !== 1 ? 's' : ''} (${parts.join(', ')}) \u00B7 5 iterations + IP`;
+}
+
+function renderMembers() {
+  const el = document.getElementById('members-list');
+  el.innerHTML = members.map((m, idx) => {
+    const refDays = 10;
+    const effHrs = refDays * 8 * (1 - m.meetings / 100);
+    const refSP  = effHrs / 8;
+    return `
+    <div class="member-card" id="mc-${m.id}">
+      <div class="member-header" onclick="toggleMember(${idx})">
+        <div class="avatar ${m.role==='Dev'?'av-dev':'av-dit'}">${esc(m.name.substring(0,2).toUpperCase())}</div>
+        <input class="member-name-edit" value="${esc(m.name)}"
+          onchange="members[${idx}].name=this.value;updateSubtitle();renderPTO()"
+          onclick="event.stopPropagation()" title="Click to edit name"/>
+        <span class="badge badge-${m.role.toLowerCase()}">${m.role}</span>
+        <span class="exp-tag">${m.exp}</span>
+        <span style="font-size:11px;color:var(--text-hint);margin-left:auto">${effHrs.toFixed(1)}h &rarr; ${refSP.toFixed(1)} SP <span style="font-size:10px">(per 10d)</span></span>
+        <button onclick="event.stopPropagation();removeMember(${idx})" title="Remove member"
+          style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-hint);padding:2px 6px;border-radius:4px;line-height:1;transition:color .15s,background .15s"
+          onmouseover="this.style.color='var(--coral-mid)';this.style.background='var(--coral-bg)'"
+          onmouseout="this.style.color='var(--text-hint)';this.style.background='none'">&times;</button>
+        <span class="chevron" style="transform:rotate(${m.expanded?'180':'0'}deg)">&#9660;</span>
+      </div>
+      <div class="member-body ${m.expanded?'open':''}">
+        <div class="grid2" style="margin:12px 0 10px">
+          <div>
+            <label>Role</label>
+            <select onchange="members[${idx}].role=this.value;renderMembers();renderPTO();updateSubtitle()">
+              <option ${m.role==='Dev'?'selected':''}>Dev</option>
+              <option ${m.role==='DIT'?'selected':''}>DIT</option>
+            </select>
+          </div>
+          <div>
+            <label>Experience level</label>
+            <select onchange="applyExpPreset(${idx},this.value)">
+              ${['Junior','Mid','Senior'].map(x=>`<option ${m.exp===x?'selected':''}>${x}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="slider-row">
+          <label>Availability %</label>
+          <input type="range" min="30" max="100" step="5" value="${100 - m.meetings}"
+            oninput="members[${idx}].meetings=100-parseInt(this.value);this.nextElementSibling.textContent=this.value+'%';renderMembers()">
+          <span class="slider-val">${100 - m.meetings}%</span>
+        </div>
+        <div class="hint" style="margin-bottom:8px">% of the working day available for delivery after meetings, ceremonies, and other overhead</div>
+        <div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:10px 12px;font-size:12px;color:var(--text-secondary)">
+          <strong style="font-weight:600;color:var(--text-primary)">Formula preview</strong> (per 10-day sprint):<br>
+          10 &times; 8h &times; ${100 - m.meetings}% = <strong style="font-weight:600;color:var(--purple-mid)">${effHrs.toFixed(1)}h &rarr; ${refSP.toFixed(1)} SP</strong>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleMember(idx) {
+  members[idx].expanded = !members[idx].expanded;
+  renderMembers();
+}
+
+function applyExpPreset(idx, val) {
+  const presets = { Senior:{meetings:20}, Mid:{meetings:25}, Junior:{meetings:30} };
+  const p = Object.assign({}, presets[val]);
+  if (members[idx].role === 'DIT') { p.meetings += 5; }
+  members[idx].exp = val; members[idx].meetings = p.meetings;
+  renderMembers();
+}
+
+function addMember() {
+  const nameEl = document.getElementById('new-member-name');
+  const role = document.getElementById('new-member-role').value;
+  const exp  = document.getElementById('new-member-exp').value;
+  const name = nameEl.value.trim() || `${role} ${memberIdCounter}`;
+  const presets = { Senior:{meetings:20}, Mid:{meetings:25}, Junior:{meetings:30} };
+  const p = Object.assign({}, presets[exp]);
+  if (role === 'DIT') { p.meetings += 5; }
+  const id = 'm' + memberIdCounter++;
+  members.push({id, name, role, exp, meetings:p.meetings, expanded:true});
+  ITERS.forEach(it => { pto[id+'_'+it.id] = 0; });
+  nameEl.value = '';
+  renderMembers(); renderPTO(); updateSubtitle();
+}
+
+function removeMember(idx) {
+  const id = members[idx].id;
+  if (members.length <= 1) { alert('At least one team member is required.'); return; }
+  if (!confirm(`Remove "${members[idx].name}" from the team?`)) return;
+  ITERS.forEach(it => { delete pto[id+'_'+it.id]; });
+  members.splice(idx, 1);
+  renderMembers(); renderPTO(); updateSubtitle();
+}
+
+// ─── Iterations ───────────────────────────────────────────────────────────────
+function renderIterDates() {
+  const el = document.getElementById('iter-dates-list');
+  el.innerHTML = ITERS.map(it => {
+    const d    = iterData[it.id];
+    const excl = orgHolidaysInRange(d.start, d.end);
+    const days = workingDays(d.start, d.end, excl);
+    const isIP = it.ip;
+    return `
+    <div class="iter-card">
+      <div class="iter-title-row">
+        <strong style="font-size:14px">${esc(it.label)}</strong>
+        ${isIP ? '<span class="badge badge-ip">IP</span>' : ''}
+        <span class="iter-days-chip">${days} working day${days!==1?'s':''}</span>
+      </div>
+      <div class="grid2" style="margin-bottom:${isIP?'12':'10'}px">
+        <div><label>Start date</label><input type="date" value="${d.start}" onchange="iterData['${it.id}'].start=this.value;renderIterDates()"/></div>
+        <div><label>End date</label><input type="date" value="${d.end}" onchange="iterData['${it.id}'].end=this.value;renderIterDates()"/></div>
+      </div>
+      ${isIP ? `
+        <div class="slider-row">
+          <label style="width:90px">IP focus %</label>
+          <input type="range" min="20" max="80" step="5" value="${d.ipFocus}"
+            oninput="iterData['${it.id}'].ipFocus=parseInt(this.value);this.nextElementSibling.textContent=this.value+'%';renderIterDates()">
+          <span class="slider-val">${d.ipFocus}%</span>
+        </div>
+        <div class="hint" style="margin-left:98px;margin-bottom:0">Default 50% — accounts for demos, retros, PI planning prep</div>
+      ` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ─── Holidays ─────────────────────────────────────────────────────────────────
+function renderHolidays() {
+  const el = document.getElementById('org-holidays-list');
+  if (orgHolidays.length === 0) {
+    el.innerHTML = '<p style="font-size:12px;color:var(--text-hint);margin-bottom:6px">No holidays added yet.</p>';
+    return;
+  }
+  el.innerHTML = orgHolidays.map((h, i) => `
+    <div class="holiday-row">
+      <input type="date" value="${h.date}" onchange="orgHolidays[${i}].date=this.value;renderIterDates();renderPTO()"/>
+      <input type="text" value="${esc(h.name)}" placeholder="Holiday name" onchange="orgHolidays[${i}].name=this.value"/>
+      <button class="del-btn" onclick="orgHolidays.splice(${i},1);renderHolidays();renderIterDates()" title="Remove">&times;</button>
+    </div>`).join('');
+}
+
+function addOrgHoliday() {
+  orgHolidays.push({date:'2026-06-01', name:''});
+  renderHolidays(); renderIterDates();
+}
+
+// ─── PTO ──────────────────────────────────────────────────────────────────────
+function renderPTO() {
+  const el = document.getElementById('pto-table');
+  el.innerHTML = `
+    <table class="pto-table">
+      <thead><tr><th>Member</th>${ITERS.map(it=>`<th>${esc(it.label)}</th>`).join('')}</tr></thead>
+      <tbody>${members.map(m=>`
+        <tr>
+          <td><strong style="font-weight:600">${esc(m.name)}</strong><span class="badge badge-${m.role.toLowerCase()}" style="margin-left:6px">${m.role}</span></td>
+          ${ITERS.map(it=>`<td><input type="number" min="0" max="10" step="1" value="${pto[m.id+'_'+it.id]||0}" onchange="pto['${m.id}_${it.id}']=Math.max(0,parseInt(this.value)||0)"/></td>`).join('')}
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ─── Work Type Helpers ────────────────────────────────────────────────────────
+function getDeliveryIters() { return ITERS.filter(it => !it.ip); }
+
+function validateWorkTypes() {
+  const total = workTypes.reduce((s, wt) => s + (wt.pct || 0), 0);
+  return Math.abs(total - 100) > 0.01 ? [`Total is ${total}% — must equal 100%`] : [];
+}
+
+// ─── Work Type Allocation Panel (global PI level) ─────────────────────────────
+function renderWorkTypePanel() {
+  const container = document.getElementById('wt-panel-persistent');
+  if (!container) return;
+
+  const errors  = validateWorkTypes();
+  const piTotalSP = ITERS.reduce((s, it) => {
+    const d = iterData[it.id];
+    const orgExcl = orgHolidaysInRange(d.start, d.end);
+    let h = 0;
+    members.forEach(m => {
+      const mPTO = pto[m.id+'_'+it.id] || 0;
+      const raw  = workingDays(d.start, d.end, orgExcl);
+      const avail = Math.max(0, raw - mPTO);
+      const ff = it.ip ? (d.ipFocus/100) : 1;
+      const mf = (1 - m.meetings/100);
+      h += avail * 8 * ff * mf;
+    });
+    return s + h * SP_PER_HOUR;
+  }, 0);
+
+  const totalPct = workTypes.reduce((s, wt) => s + (wt.pct || 0), 0);
+
+  container.innerHTML = `<div class="wt-section">
+    <div class="wt-section-title">
+      <span>Work Type Allocation</span>
+      <button class="wt-add-type-btn" onclick="addWorkType()">+ Add work type</button>
+    </div>
+    ${errors.length > 0 ? `<div class="wt-error-banner">&#9888; ${esc(errors[0])}</div>` : ''}
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:8px 10px;background:var(--bg-tertiary);font-size:11px;font-weight:600;color:var(--text-secondary);border-bottom:1px solid var(--border-light)">Work Type</th>
+            <th style="text-align:center;padding:8px 10px;background:var(--bg-tertiary);font-size:11px;font-weight:600;color:var(--text-secondary);border-bottom:1px solid var(--border-light);width:120px">% of PI</th>
+            <th style="text-align:center;padding:8px 10px;background:var(--bg-tertiary);font-size:11px;font-weight:600;color:var(--text-secondary);border-bottom:1px solid var(--border-light);width:130px">Story Points</th>
+            <th style="padding:8px 10px;background:var(--bg-tertiary);border-bottom:1px solid var(--border-light);width:36px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${workTypes.map((wt, i) => {
+            const computedSP = Math.round(piTotalSP * (wt.pct || 0) / 100);
+            return `<tr>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-light)">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="width:12px;height:12px;border-radius:3px;background:${wt.color};flex-shrink:0"></div>
+                  <input type="text" value="${esc(wt.name)}"
+                    style="border:none;background:transparent;font-size:13px;font-weight:600;color:var(--text-primary);outline:none;border-bottom:1px dashed var(--border-medium);width:100%;padding-bottom:1px"
+                    oninput="workTypes[${i}].name=this.value"
+                    onfocus="this.style.borderBottomColor='var(--purple-mid)'"
+                    onblur="this.style.borderBottomColor='var(--border-medium)'"/>
+                </div>
+              </td>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-light);text-align:center">
+                <input type="number" min="0" max="100" step="1" value="${wt.pct || 0}"
+                  style="width:70px;text-align:center;font-size:13px;font-weight:600;color:var(--purple-mid)"
+                  oninput="workTypes[${i}].pct=Math.max(0,Math.min(100,parseFloat(this.value)||0));renderWorkTypePanel()"/>
+              </td>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-light);text-align:center">
+                <input type="number" min="0" step="1" value="${wt.manualSP !== undefined ? wt.manualSP : computedSP}"
+                  style="width:80px;text-align:center;font-size:13px;font-weight:600;color:var(--teal-mid)"
+                  title="Auto-computed from %. Edit to override."
+                  oninput="workTypes[${i}].manualSP=parseInt(this.value)||0"/>
+              </td>
+              <td style="padding:7px 10px;border-bottom:1px solid var(--border-light);text-align:center">
+                <button onclick="removeWorkType(${i})" title="Remove"
+                  style="background:none;border:none;cursor:pointer;color:var(--text-hint);font-size:16px;line-height:1;padding:2px 4px;border-radius:4px;transition:color .15s"
+                  onmouseover="this.style.color='var(--coral-mid)'"
+                  onmouseout="this.style.color='var(--text-hint)'">&times;</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td style="padding:8px 10px;font-weight:600;font-size:12px;color:var(--text-secondary)">Total</td>
+            <td style="padding:8px 10px;text-align:center;font-weight:700;font-size:13px;color:${Math.abs(totalPct-100)<0.01?'var(--teal-mid)':'var(--coral-mid)'}">${totalPct}%</td>
+            <td style="padding:8px 10px;text-align:center;font-weight:700;font-size:13px;color:var(--purple-mid)">${Math.round(piTotalSP)} SP</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div style="font-size:11px;color:var(--text-hint);margin-top:8px">Story points are auto-computed from PI total &times; %. You can override the SP value directly.</div>
+  </div>`;
+}
+
+function addWorkType() {
+  const color = WT_COLORS[wtIdCounter % WT_COLORS.length];
+  workTypes.push({ id: 'wt'+wtIdCounter++, name: 'New Type', color, pct: 0 });
+  renderWorkTypePanel();
+}
+
+function removeWorkType(idx) {
+  if (workTypes.length <= 1) { alert('At least one work type is required.'); return; }
+  if (!confirm(`Remove "${workTypes[idx].name}"?`)) return;
+  workTypes.splice(idx, 1);
+  renderWorkTypePanel();
+}
+
+function renderSummaryWorkTypes() { renderWorkTypePanel(); }
+
+// ─── Summary ──────────────────────────────────────────────────────────────────
+function calcSummary() {
+  let piTotalHours = 0, piTotalSP = 0;
+  const iterResults = [];
+
+  ITERS.forEach(it => {
+    const d = iterData[it.id];
+    const orgExcl = orgHolidaysInRange(d.start, d.end);
+    let iterHours = 0;
+    members.forEach(m => {
+      const mPTO    = pto[m.id+'_'+it.id] || 0;
+      const rawDays = workingDays(d.start, d.end, orgExcl);
+      const availDays   = Math.max(0, rawDays - mPTO);
+      const focusFactor = it.ip ? (d.ipFocus / 100) : 1;
+      const meetFactor  = (1 - m.meetings / 100);
+      iterHours += availDays * 8 * focusFactor * meetFactor;
+    });
+    const iterSP = iterHours * SP_PER_HOUR;
+    piTotalHours += iterHours;
+    piTotalSP    += iterSP;
+    iterResults.push({ it, hours: iterHours, sp: iterSP, d });
+  });
+
+  // ── Top metrics + conversion note ──────────────────────────────────────────
+  const ipResult = iterResults.find(r => r.it.ip);
+  const piSPWithoutIP = Math.round(piTotalSP - (ipResult ? ipResult.sp : 0));
+
+  let topHtml = `<div class="metric-grid" style="grid-template-columns:repeat(5,1fr)">
+    <div class="metric-card"><div class="metric-val">${Math.round(piTotalSP)}</div><div class="metric-lbl">Total PI story points</div></div>
+    <div class="metric-card" style="border:1px solid var(--purple-mid)"><div class="metric-val" style="color:var(--purple-mid)">${piSPWithoutIP}</div><div class="metric-lbl">Capacity excl. IP iteration</div></div>
+    <div class="metric-card"><div class="metric-val">${Math.round(piTotalHours)}</div><div class="metric-lbl">Total PI effective hours</div></div>
+    <div class="metric-card"><div class="metric-val">${members.filter(m=>m.role==='Dev').length}</div><div class="metric-lbl">Developers</div></div>
+    <div class="metric-card"><div class="metric-val">${members.filter(m=>m.role==='DIT').length}</div><div class="metric-lbl">DITs</div></div>
+  </div>
+  <div style="font-size:12px;color:var(--text-secondary);background:var(--bg-secondary);border-radius:var(--radius-md);padding:8px 12px;margin-bottom:14px">
+    <strong style="font-weight:600;color:var(--text-primary)">Conversion:</strong>
+    1 SP = 8 hours &nbsp;&bull;&nbsp; Story points = effective hours &divide; 8 &nbsp;&bull;&nbsp;
+    Effective hours = available days &times; 8h &times; availability%
+  </div>`;
+  document.getElementById('summary-content').innerHTML = topHtml;
+
+  // ── Work type panel — rendered into its persistent container ───────────────
+  renderWorkTypePanel();
+
+  // ── Iteration + member tables ──────────────────────────────────────────────
+  let iterMemberHtml = `<div class="section-title">Per-Iteration Breakdown</div>`;
+  iterMemberHtml += `<div class="summary-table-wrap"><table class="sum-table">
+    <thead><tr>
+      <th>Iteration</th><th>Dates</th><th>Eff. hours</th><th>Total SP</th>
+    </tr></thead>
+    <tbody>
+      ${iterResults.map(r => {
+        return `<tr>
+          <td><strong style="font-weight:600">${esc(r.it.label)}</strong>${r.it.ip?'<span class="badge badge-ip" style="margin-left:6px">IP</span>':''}</td>
+          <td style="color:var(--text-secondary);white-space:nowrap">${r.d.start} &rarr; ${r.d.end}</td>
+          <td style="color:var(--text-secondary)">${Math.round(r.hours)}h</td>
+          <td><span class="sp-chip">${Math.round(r.sp)}</span></td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table></div>`;
+
+  iterMemberHtml += `<div class="section-title">Capacity by team member across PI</div>`;
+  iterMemberHtml += `<div class="summary-table-wrap"><table class="sum-table">
+    <thead><tr>
+      <th>Member</th><th>Role</th><th>Avail %</th>
+      ${ITERS.map(it=>`<th style="white-space:nowrap">${esc(it.label.replace('Iteration ','I'))}<br><span style="font-weight:400;font-size:10px">SP (hrs)</span></th>`).join('')}
+      <th>PI Total SP</th>
+    </tr></thead>
+    <tbody>
+      ${members.map(m => {
+        let mTotalSP = 0;
+        const cells = ITERS.map(it => {
+          const d = iterData[it.id];
+          const orgExcl = orgHolidaysInRange(d.start, d.end);
+          const mPTO = pto[m.id+'_'+it.id] || 0;
+          const rawDays = workingDays(d.start, d.end, orgExcl);
+          const availDays = Math.max(0, rawDays - mPTO);
+          const focusFactor = it.ip ? (d.ipFocus/100) : 1;
+          const meetFactor  = (1 - m.meetings/100);
+          const effHours = availDays * 8 * focusFactor * meetFactor;
+          const sp = effHours * SP_PER_HOUR;
+          mTotalSP += sp;
+          return {sp, effHours, pto:mPTO};
+        });
+        return `<tr>
+          <td><strong style="font-weight:600">${esc(m.name)}</strong></td>
+          <td><span class="badge badge-${m.role.toLowerCase()}">${m.role}</span> <span style="font-size:10px;color:var(--text-hint)">${m.exp}</span></td>
+          <td>${100 - m.meetings}%</td>
+          ${cells.map(c=>`<td>${Math.round(c.sp)} <span style="font-size:10px;color:var(--text-hint)">(${Math.round(c.effHours)}h)</span>${c.pto>0?`<br><span class="pto-tag">-${c.pto}d PTO</span>`:''}</td>`).join('')}
+          <td><span class="sp-chip">${Math.round(mTotalSP)}</span></td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table></div>`;
+
+  document.getElementById('summary-iter-member').innerHTML = iterMemberHtml;
+}
+
+// ─── PDF Export ───────────────────────────────────────────────────────────────
+async function exportPDF() {
+  const btn = document.querySelector('.pdf-btn');
+  const orig = btn.textContent;
+  btn.textContent = 'Generating...';
+  btn.disabled = true;
+
+  try {
+    const { jsPDF } = window.jspdf;
+
+    // Use landscape for the member table (many columns); we'll add portrait pages first then switch
+    // Strategy: single landscape doc — wider pages give all tables room to breathe
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();  // 297mm landscape
+    const pageH = doc.internal.pageSize.getHeight(); // 210mm landscape
+    const margin = 14;
+    let y = margin;
+
+    const C = {
+      purple: [83, 74, 183],
+      dark:   [26, 26, 24],
+      mid:    [95, 94, 90],
+      light:  [240, 237, 232],
+      white:  [255, 255, 255],
+    };
+
+    function hexToRgb(hex) {
+      return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+    }
+
+    function addPageIfNeeded(needed = 20) {
+      if (y + needed > pageH - margin) { doc.addPage(); y = margin; }
+    }
+
+    function sectionTitle(text) {
+      addPageIfNeeded(14);
+      doc.setFontSize(10); doc.setFont('helvetica','bold');
+      doc.setTextColor(...C.purple);
+      doc.text(text.toUpperCase(), margin, y);
+      y += 1;
+      doc.setDrawColor(...C.purple); doc.setLineWidth(0.4);
+      doc.line(margin, y, pageW - margin, y);
+      y += 6;
+      doc.setTextColor(...C.dark);
+    }
+
+    // ── Header banner ──────────────────────────────────────────────────────────
+    doc.setFillColor(...C.purple);
+    doc.rect(0, 0, pageW, 22, 'F');
+    doc.setTextColor(...C.white);
+    doc.setFontSize(16); doc.setFont('helvetica','bold');
+    doc.text('PI Capacity Calculator', margin, 13);
+    doc.setFontSize(9); doc.setFont('helvetica','normal');
+    const devs = members.filter(m => m.role === 'Dev').length;
+    const dits = members.filter(m => m.role === 'DIT').length;
+    const genDate = new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+    const teamLabel = teamName ? `${teamName}  |  ` : '';
+    doc.text(
+      `${teamLabel}${members.length} members (${devs} Devs, ${dits} DITs)  |  Generated ${genDate}`,
+      margin, 19
+    );
+    y = 30;
+    doc.setTextColor(...C.dark);
+
+    // ── Compute iteration results ──────────────────────────────────────────────
+    let piTotalHours = 0, piTotalSP = 0;
+    const iterResults = [];
+    ITERS.forEach(it => {
+      const d = iterData[it.id];
+      const orgExcl = orgHolidaysInRange(d.start, d.end);
+      let iterHours = 0;
+      members.forEach(m => {
+        const mPTO      = pto[m.id+'_'+it.id] || 0;
+        const rawDays   = workingDays(d.start, d.end, orgExcl);
+        const availDays = Math.max(0, rawDays - mPTO);
+        const focusFactor = it.ip ? (d.ipFocus/100) : 1;
+        const meetFactor  = (1 - m.meetings/100);
+        iterHours += availDays * 8 * focusFactor * meetFactor;
+      });
+      const iterSP = iterHours * SP_PER_HOUR;
+      piTotalHours += iterHours;
+      piTotalSP    += iterSP;
+      iterResults.push({ it, hours: iterHours, sp: iterSP, d });
+    });
+
+    // ── PI Summary metric cards ────────────────────────────────────────────────
+    sectionTitle('PI Summary');
+    const ipRes = iterResults.find(r => r.it.ip);
+    const pdfSPWithoutIP = Math.round(piTotalSP - (ipRes ? ipRes.sp : 0));
+    const metrics = [
+      ['Total Story Points',       Math.round(piTotalSP)],
+      ['Excl. IP Iteration',       pdfSPWithoutIP],
+      ['Total Effective Hours',    Math.round(piTotalHours) + 'h'],
+      ['Developers',               devs],
+      ['DITs',                     dits],
+    ];
+    const mw = (pageW - margin * 2) / metrics.length;
+    metrics.forEach((m, i) => {
+      const x = margin + i * mw;
+      doc.setFillColor(...C.light);
+      doc.roundedRect(x, y, mw - 2, 18, 2, 2, 'F');
+      doc.setFontSize(15); doc.setFont('helvetica','bold'); doc.setTextColor(...C.purple);
+      doc.text(String(m[1]), x + (mw - 2) / 2, y + 10, { align: 'center' });
+      doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...C.mid);
+      doc.text(String(m[0]), x + (mw - 2) / 2, y + 15, { align: 'center' });
+    });
+    y += 24;
+    doc.setTextColor(...C.dark);
+
+    // ── Work Type Allocation ───────────────────────────────────────────────────
+    sectionTitle('Work Type Allocation');
+
+    const wtHead = [['Work Type', 'Colour', '% of PI', 'Story Points']];
+    const wtBody = workTypes.map(wt => {
+      const sp = wt.manualSP !== undefined ? wt.manualSP : Math.round(piTotalSP * (wt.pct || 0) / 100);
+      return [wt.name, '', (wt.pct || 0) + '%', String(sp)];
+    });
+
+    doc.autoTable({
+      head: wtHead,
+      body: wtBody,
+      startY: y,
+      margin: { left: margin, right: margin },
+      headStyles: { fillColor: C.purple, textColor: C.white, fontSize: 9, fontStyle: 'bold' },
+      bodyStyles: { fontSize: 9, textColor: C.dark },
+      alternateRowStyles: { fillColor: [248, 247, 245] },
+      columnStyles: {
+        0: { fontStyle: 'bold', cellWidth: 60 },
+        1: { cellWidth: 16, halign: 'center' },
+        2: { cellWidth: 30, halign: 'right' },
+        3: { halign: 'right' },
+      },
+      didDrawCell: (data) => {
+        // Draw a solid colour square in the Colour column
+        if (data.section === 'body' && data.column.index === 1) {
+          const wt = workTypes[data.row.index];
+          if (wt) {
+            const rgb = hexToRgb(wt.color);
+            const sz = 4;
+            const cx = data.cell.x + data.cell.width / 2 - sz / 2;
+            const cy = data.cell.y + data.cell.height / 2 - sz / 2;
+            doc.setFillColor(...rgb);
+            doc.roundedRect(cx, cy, sz, sz, 0.5, 0.5, 'F');
+          }
+        }
+      },
+    });
+    y = doc.lastAutoTable.finalY + 8;
+
+    // ── Per-Iteration Breakdown ────────────────────────────────────────────────
+    addPageIfNeeded(30);
+    sectionTitle('Per-Iteration Breakdown');
+
+    const iterHead = [['Iteration', 'Start Date', 'End Date', 'Eff. Hours', 'Total SP']];
+    const iterBody = iterResults.map(r => {
+      return [
+        r.it.label + (r.it.ip ? ' (IP)' : ''),
+        r.d.start,
+        r.d.end,
+        Math.round(r.hours) + 'h',
+        String(Math.round(r.sp)),
+      ];
+    });
+
+    doc.autoTable({
+      head: iterHead,
+      body: iterBody,
+      startY: y,
+      margin: { left: margin, right: margin },
+      headStyles: { fillColor: C.purple, textColor: C.white, fontSize: 8, fontStyle: 'bold' },
+      bodyStyles: { fontSize: 8, textColor: C.dark },
+      alternateRowStyles: { fillColor: [248, 247, 245] },
+      columnStyles: {
+        0: { fontStyle: 'bold', cellWidth: 42 },
+        1: { cellWidth: 28 },
+        2: { cellWidth: 28 },
+        3: { halign: 'right', cellWidth: 24 },
+        4: { halign: 'right', fontStyle: 'bold', cellWidth: 24 },
+      },
+    });
+    y = doc.lastAutoTable.finalY + 8;
+
+    // ── Capacity by Team Member ────────────────────────────────────────────────
+    addPageIfNeeded(30);
+    sectionTitle('Capacity by Team Member');
+
+    const iterLabels = ITERS.map(it => it.label.replace('Iteration ', 'I'));
+    const memHead    = [['Member', 'Role', 'Avail %', ...iterLabels, 'PI Total']];
+    const memBody    = members.map(m => {
+      let mTotalSP = 0;
+      const cells = ITERS.map(it => {
+        const d         = iterData[it.id];
+        const orgExcl   = orgHolidaysInRange(d.start, d.end);
+        const mPTO      = pto[m.id + '_' + it.id] || 0;
+        const rawDays   = workingDays(d.start, d.end, orgExcl);
+        const availDays = Math.max(0, rawDays - mPTO);
+        const focusFactor = it.ip ? (d.ipFocus / 100) : 1;
+        const meetFactor  = (1 - m.meetings / 100);
+        const sp = availDays * 8 * focusFactor * meetFactor * SP_PER_HOUR;
+        mTotalSP += sp;
+        return Math.round(sp) + (mPTO > 0 ? ` (-${mPTO}d)` : '');
+      });
+      return [m.name, m.role, (100 - m.meetings) + '%', ...cells, String(Math.round(mTotalSP))];
+    });
+
+    const memFixedW  = 36 + 14 + 18; // name + role + mtg overhead
+    const iterCellW  = Math.max(14, Math.floor((pageW - margin * 2 - memFixedW - 18) / ITERS.length));
+    const memColStyles = {
+      0: { fontStyle: 'bold', cellWidth: 36 },
+      1: { cellWidth: 14 },
+      2: { halign: 'right', cellWidth: 18 },
+      [memHead[0].length - 1]: { fontStyle: 'bold', textColor: C.purple, halign: 'right', cellWidth: 18 },
+    };
+    ITERS.forEach((_, i) => { memColStyles[3 + i] = { halign: 'right', cellWidth: iterCellW }; });
+
+    doc.autoTable({
+      head: memHead,
+      body: memBody,
+      startY: y,
+      margin: { left: margin, right: margin },
+      headStyles: { fillColor: C.purple, textColor: C.white, fontSize: 7, fontStyle: 'bold' },
+      bodyStyles: { fontSize: 7, textColor: C.dark },
+      alternateRowStyles: { fillColor: [248, 247, 245] },
+      columnStyles: memColStyles,
+    });
+    y = doc.lastAutoTable.finalY + 8;
+
+    // ── Organisation Holidays ─────────────────────────────────────────────────
+    if (orgHolidays.length > 0) {
+      addPageIfNeeded(30);
+      sectionTitle('Organisation Holidays');
+      doc.autoTable({
+        head: [['Date', 'Holiday Name']],
+        body: orgHolidays.map(h => [h.date, h.name || '--']),
+        startY: y,
+        margin: { left: margin, right: margin },
+        headStyles: { fillColor: C.purple, textColor: C.white, fontSize: 8, fontStyle: 'bold' },
+        bodyStyles: { fontSize: 8, textColor: C.dark },
+        alternateRowStyles: { fillColor: [248, 247, 245] },
+        columnStyles: { 0: { cellWidth: 36 } },
+      });
+      y = doc.lastAutoTable.finalY + 8;
+    }
+
+    // ── Footer on every page ──────────────────────────────────────────────────
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(7); doc.setTextColor(...C.mid);
+      doc.text('PI Capacity Calculator  |  Confidential', margin, pageH - 6);
+      doc.text(`Page ${i} of ${pageCount}`, pageW - margin, pageH - 6, { align: 'right' });
+    }
+
+    const pdfFilename = teamName
+      ? `PI_Capacity_${teamName.replace(/[^a-zA-Z0-9]/g,'_')}.pdf`
+      : 'PI_Capacity_Report.pdf';
+    doc.save(pdfFilename);
+
+  } catch (err) {
+    console.error(err);
+    alert('PDF generation failed. Please try again.\n' + err.message);
+  }
+
+  btn.textContent = orig;
+  btn.disabled = false;
+}
+
+// ─── Save / Reset ─────────────────────────────────────────────────────────────
+// ─── Save / Load / Reset ──────────────────────────────────────────────────────
+function saveData() {
+  const payload = {
+    teamName,
+    members,
+    iterData,
+    orgHolidays,
+    pto,
+    workTypes,
+    wtIdCounter,
+    memberIdCounter,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  const fname = teamName
+    ? `PI_Capacity_${teamName.replace(/[^a-zA-Z0-9]/g,'_')}.json`
+    : 'PI_Capacity_Data.json';
+  a.download = fname;
+  a.click();
+  URL.revokeObjectURL(url);
+  const toast = document.getElementById('save-toast');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+function loadFromFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const d = JSON.parse(e.target.result);
+
+      // Migrate old JSONs: if members have focus+meetings but no standalone meetings-only field,
+      // derive a single meetings value. We keep meetings as-is (old JSONs already have it).
+      // If a member has focus but no meetings, default meetings to 25.
+      if (d.members) {
+        d.members = d.members.map(m => {
+          if (m.meetings === undefined) m.meetings = 25;
+          // drop focus — not used in this version
+          delete m.focus;
+          return m;
+        });
+        members = d.members;
+      }
+      if (d.teamName !== undefined) { teamName = d.teamName; const inp = document.getElementById('team-name-input'); if(inp) inp.value = teamName; }
+      if (d.iterData)        Object.assign(iterData, d.iterData);
+      if (d.orgHolidays)     orgHolidays     = d.orgHolidays;
+      if (d.pto)             Object.assign(pto, d.pto);
+      if (d.workTypes)       workTypes       = d.workTypes;
+      if (d.wtIdCounter)     wtIdCounter     = d.wtIdCounter;
+      if (d.memberIdCounter) memberIdCounter = d.memberIdCounter;
+      renderMembers(); renderIterDates(); renderHolidays(); renderPTO(); updateSubtitle();
+      const toast = document.getElementById('save-toast');
+      toast.textContent = 'Data loaded!';
+      toast.classList.add('show');
+      setTimeout(() => { toast.classList.remove('show'); toast.textContent = 'Exported!'; }, 2000);
+    } catch(err) {
+      alert('Could not load file — make sure it\'s a valid PI Capacity JSON export.');
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function resetData() {
+  if (!confirm('Reset all data to defaults? This cannot be undone.')) return;
+  location.reload();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+renderMembers();
+renderIterDates();
+renderHolidays();
+renderPTO();
+updateSubtitle();
+</script>
+</body>
+</html>
