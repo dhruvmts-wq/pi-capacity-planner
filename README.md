@@ -2,7 +2,7 @@
 
 A lightweight, browser-based **Program Increment (PI) Capacity Planning Calculator** designed for SAFe Scrum teams.
 
-# Live Demo -> https://dhruvmts-wq.github.io/pi-capacity-planner/
+### Live Demo -> https://dhruvmts-wq.github.io/pi-capacity-planner/
 
 The calculator helps Agile teams estimate realistic delivery capacity by considering:
 
